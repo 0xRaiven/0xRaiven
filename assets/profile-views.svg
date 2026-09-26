@@ -95,7 +95,7 @@
     <text x="12" y="12" class="mono-font" font-size="6.5" font-weight="600" letter-spacing="1" fill="#716C75">TOTAL PROFILE VIEWS</text>
     
     <!-- Digital Counter Readout (Actual Profile Count) -->
-    <text id="profile-views-count" x="14" y="25" class="mono-font" font-size="12.5" font-weight="700" letter-spacing="3" fill="#E8E6E8"><tspan fill="#5C1029">00,</tspan><tspan fill="#E8E6E8">157</tspan> <tspan font-size="8" font-weight="600" letter-spacing="1" fill="#8B1E3F">HITS</tspan></text>
+    <text id="profile-views-count" x="14" y="25" class="mono-font" font-size="12.5" font-weight="700" letter-spacing="3" fill="#E8E6E8"><tspan fill="#5C1029">00,</tspan><tspan fill="#E8E6E8">158</tspan> <tspan font-size="8" font-weight="600" letter-spacing="1" fill="#8B1E3F">HITS</tspan></text>
   </g>
 
   <!-- Vertical Divider 2 -->
