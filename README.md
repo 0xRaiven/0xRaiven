@@ -67,9 +67,6 @@
 
 <div align="center">
 
-<img src="assets/divider.svg" width="100%" alt="divider" />
-
-
 <p>
   <a href="mailto:0xraiven@proton.me">
     <img src="https://img.shields.io/badge/Email-0xraiven%40proton.me-8B1E3F?style=flat-square&logo=protonmail&logoColor=white&labelColor=09090B" alt="Email"/>
@@ -82,8 +79,6 @@
 
 <!-- Profile view tracking -->
 <img src="https://komarev.com/ghpvc/?username=0xraiven" width="0" height="0" alt="" />
-
-<br/>
 <img src="assets/divider.svg" width="100%" alt="divider" />
 
 </div>
