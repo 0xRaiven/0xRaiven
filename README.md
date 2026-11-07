@@ -32,36 +32,13 @@
 
 <img src="assets/divider.svg" width="100%" alt="divider" />
 
-### Activity &amp; Language Metrics
+### Contribution Graph
 
 </div>
 
-<table>
-  <tr>
-    <td width="50%" align="center" valign="middle">
-      <a href="https://github.com/0xraiven">
-        <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=0xraiven&layout=compact&card_width=467&langs_count=6&bg_color=09090B&border_color=292329&title_color=B8325A&text_color=E8E6E8" alt="Most Used Languages" width="100%" />
-      </a>
-    </td>
-    <td width="50%" align="center" valign="middle">
-      <a href="https://github.com/0xraiven">
-        <img src="https://github-readme-stats.vercel.app/api?username=0xraiven&show_icons=true&bg_color=09090B&border_color=292329&title_color=B8325A&text_color=E8E6E8&icon_color=8B1E3F&hide_border=false" alt="GitHub Profile Stats" width="100%" />
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td width="58%" align="center" valign="middle">
-      <a href="https://github.com/0xraiven">
-        <img src="https://ghchart.rshah.org/8B1E3F/0xraiven" alt="0xraiven GitHub Contributions" width="100%" />
-      </a>
-    </td>
-    <td width="42%" align="center" valign="middle">
-      <a href="https://github.com/0xraiven">
-        <img src="https://streak-stats.demolab.com/?user=0xraiven&theme=dark&background=09090B&border=292329&stroke=8B1E3F&ring=B8325A&fire=B8325A&currStreakNum=E8E6E8&sideNums=E8E6E8&currStreakLabel=B8325A&sideLabels=8E8A90&dates=8E8A90" alt="GitHub Streak" width="100%" />
-      </a>
-    </td>
-  </tr>
-</table>
+<div align="center">
+  <img src="assets/contribution-3d.svg" width="100%" alt="0xraiven 3D Isometric Contribution Graph" />
+</div>
 
 <br/>
 
