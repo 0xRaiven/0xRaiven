@@ -47,108 +47,137 @@ THEME = {
 def exp_cdf(x, median):
     return 1 - (2 ** (-(max(0, x) / max(1, median))))
 
-def calculate_rank(commits, prs, issues, reviews, repos):
+def calculate_rank(commits, prs, issues, repos):
     """
     Computes global developer rank (S, A+, A, A-, B+, etc.) using CDF distributions,
-    specifically excluding total stars earned.
+    specifically excluding total stars earned, weighted fairly for systems/tooling engineers.
     """
-    score = (
-        3.0 * exp_cdf(commits, 250) +
-        4.0 * exp_cdf(prs, 25) +
-        1.5 * exp_cdf(issues, 15) +
-        1.5 * exp_cdf(reviews, 10) +
-        1.0 * exp_cdf(repos, 5)
-    ) / 11.0
+    c_score = exp_cdf(commits, 200)
+    p_score = exp_cdf(prs, 10)
+    i_score = exp_cdf(issues, 8)
+    r_score = exp_cdf(repos, 3)
 
-    percentile = (1 - score) * 100
+    score = (5.0 * c_score + 2.0 * r_score + 2.0 * p_score + 1.0 * i_score) / 10.0
+    percentile = (1.0 - score) * 100
 
-    if percentile <= 2.0:
+    if percentile <= 5.0:
         rank = "S"
-    elif percentile <= 12.5:
+    elif percentile <= 15.0:
         rank = "A+"
-    elif percentile <= 25.0:
+    elif percentile <= 28.0:
         rank = "A"
-    elif percentile <= 37.5:
+    elif percentile <= 42.0:
         rank = "A-"
-    elif percentile <= 50.0:
+    elif percentile <= 58.0:
         rank = "B+"
-    elif percentile <= 62.5:
+    elif percentile <= 72.0:
         rank = "B"
-    elif percentile <= 75.0:
+    elif percentile <= 85.0:
         rank = "B-"
-    elif percentile <= 87.5:
-        rank = "C+"
     else:
         rank = "C"
 
     return rank, score, percentile
 
 def fetch_github_data(token, username):
-    url = "https://api.github.com/graphql"
-    query = """
-    query($user: String!) {
-      user(login: $user) {
-        contributionsCollection {
+    headers = {
+        "Authorization": f"bearer {token}",
+        "User-Agent": "0xraiven-Contribution-Builder",
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github+json"
+    }
+
+    query = f"""
+    query {{
+      user(login: "{username}") {{
+        contributionsCollection {{
           totalCommitContributions
+          restrictedContributionsCount
           totalPullRequestContributions
           totalIssueContributions
           totalRepositoryContributions
           totalPullRequestReviewContributions
-          contributionCalendar {
+          contributionCalendar {{
             totalContributions
-            weeks {
-              contributionDays {
+            weeks {{
+              contributionDays {{
                 date
                 contributionCount
                 weekday
-              }
-            }
-          }
-        }
-        pullRequests {
+              }}
+            }}
+          }}
+        }}
+        repositoriesContributedTo(contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {{
           totalCount
-        }
-        issues {
+        }}
+        repositories(ownerAffiliations: OWNER) {{
           totalCount
-        }
-        repositoriesContributedTo(contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
-          totalCount
-        }
-        followers {
-          totalCount
-        }
-      }
-    }
+        }}
+      }}
+      prs: search(query: "type:pr author:{username}", type: ISSUE) {{
+        issueCount
+      }}
+      issues: search(query: "type:issue author:{username}", type: ISSUE) {{
+        issueCount
+      }}
+    }}
     """
-    req = urllib.request.Request(
-        url,
-        data=json.dumps({"query": query, "variables": {"user": username}}).encode("utf-8"),
-        headers={
-            "Authorization": f"bearer {token}",
-            "User-Agent": "0xraiven-Contribution-Builder",
-            "Content-Type": "application/json"
-        }
-    )
-    with urllib.request.urlopen(req, timeout=15) as resp:
+    url = "https://api.github.com/graphql"
+    req = urllib.request.Request(url, data=json.dumps({"query": query}).encode("utf-8"), headers=headers)
+    
+    with urllib.request.urlopen(req, timeout=20) as resp:
         data = json.loads(resp.read().decode("utf-8"))
-        u = data.get("data", {}).get("user", {})
-        cc = u.get("contributionsCollection", {})
-        cal = cc.get("contributionCalendar", {})
 
-        commits = cc.get("totalCommitContributions") or cal.get("totalContributions", 0)
-        prs = (u.get("pullRequests") or {}).get("totalCount") or cc.get("totalPullRequestContributions", 0)
-        issues = (u.get("issues") or {}).get("totalCount") or cc.get("totalIssueContributions", 0)
-        repos = (u.get("repositoriesContributedTo") or {}).get("totalCount") or cc.get("totalRepositoryContributions", 0)
-        reviews = cc.get("totalPullRequestReviewContributions", 0)
+    u = data.get("data", {}).get("user", {})
+    cc = u.get("contributionsCollection", {})
+    cal = cc.get("contributionCalendar", {})
 
-        return {
-            "calendar": cal,
-            "commits": commits,
-            "prs": prs,
-            "issues": issues,
-            "repos": repos,
-            "reviews": reviews
-        }
+    cal_total = cal.get("totalContributions", 0)
+    commit_contributions = cc.get("totalCommitContributions", 0) + cc.get("restrictedContributionsCount", 0)
+
+    # Fetch all-time commits count via search API
+    all_time_commits = 0
+    try:
+        search_commit_url = f"https://api.github.com/search/commits?q=author:{username}"
+        req_commits = urllib.request.Request(
+            search_commit_url,
+            headers={**headers, "Accept": "application/vnd.github.cloak-preview+json"}
+        )
+        with urllib.request.urlopen(req_commits, timeout=10) as c_resp:
+            c_data = json.loads(c_resp.read().decode("utf-8"))
+            all_time_commits = c_data.get("total_count", 0)
+    except Exception as e:
+        print(f"Commit search fallback: {e}")
+
+    commits = max(all_time_commits, commit_contributions, cal_total)
+
+    # Pull requests (search + collection)
+    search_prs = data.get("data", {}).get("prs", {}).get("issueCount", 0)
+    contrib_prs = cc.get("totalPullRequestContributions", 0)
+    prs = max(search_prs, contrib_prs)
+
+    # Issues (search + collection)
+    search_issues = data.get("data", {}).get("issues", {}).get("issueCount", 0)
+    contrib_issues = cc.get("totalIssueContributions", 0)
+    issues = max(search_issues, contrib_issues)
+
+    # Repositories
+    repos_contrib = u.get("repositoriesContributedTo", {}).get("totalCount", 0)
+    repos_owned = u.get("repositories", {}).get("totalCount", 0)
+    contrib_repos = cc.get("totalRepositoryContributions", 0)
+    repos = max(repos_contrib, repos_owned, contrib_repos)
+
+    reviews = cc.get("totalPullRequestReviewContributions", 0)
+
+    return {
+        "calendar": cal,
+        "commits": commits,
+        "prs": prs,
+        "issues": issues,
+        "repos": repos,
+        "reviews": reviews
+    }
 
 def calculate_stats(calendar, raw_metrics):
     total = calendar.get("totalContributions", 0)
@@ -164,9 +193,10 @@ def calculate_stats(calendar, raw_metrics):
     start_this_week = datetime.datetime.strptime(weeks[-1]["contributionDays"][0]["date"], "%Y-%m-%d").strftime("%b %d")
     end_this_week = datetime.datetime.strptime(weeks[-1]["contributionDays"][-1]["date"], "%Y-%m-%d").strftime("%b %d")
 
-    # Overall start and end
-    start_all = datetime.datetime.strptime(all_days[0]["date"], "%Y-%m-%d").strftime("%b %d")
-    end_all = datetime.datetime.strptime(all_days[-1]["date"], "%Y-%m-%d").strftime("%b %d")
+    # Overall start and end: formatted as Month Year -> Month Year (e.g. Nov 2025 -> Nov 2026)
+    start_dt = datetime.datetime.strptime(all_days[0]["date"], "%Y-%m-%d")
+    end_dt = datetime.datetime.strptime(all_days[-1]["date"], "%Y-%m-%d")
+    total_range = f"{start_dt.strftime('%b %Y')} \u2192 {end_dt.strftime('%b %Y')}"
 
     # Best day
     best_day_count = 0
@@ -235,11 +265,11 @@ def calculate_stats(calendar, raw_metrics):
     repos = raw_metrics.get("repos", 0)
     reviews = raw_metrics.get("reviews", 0)
 
-    rank, score, pct = calculate_rank(commits, prs, issues, reviews, repos)
+    rank, score, pct = calculate_rank(commits, prs, issues, repos)
 
     return {
         "total": total,
-        "total_range": f"{start_all} \u2192 {end_all}",
+        "total_range": total_range,
         "this_week": this_week_count,
         "this_week_range": f"{start_this_week} \u2192 {end_this_week}",
         "best_day": best_day_count,
