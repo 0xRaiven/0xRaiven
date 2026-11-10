@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
 Generate a 3D isometric GitHub contribution graph matching the 0xraiven cyberpunk/wine theme.
+Integrates live GitHub developer stats (commits, PRs, issues, contributed repos) and developer rank grade,
+excluding total stars earned.
 """
 import os
+import sys
 import json
 import urllib.request
 import datetime
@@ -41,12 +44,56 @@ THEME = {
     ]
 }
 
-def fetch_contributions_graphql(token, username):
+def exp_cdf(x, median):
+    return 1 - (2 ** (-(max(0, x) / max(1, median))))
+
+def calculate_rank(commits, prs, issues, reviews, repos):
+    """
+    Computes global developer rank (S, A+, A, A-, B+, etc.) using CDF distributions,
+    specifically excluding total stars earned.
+    """
+    score = (
+        3.0 * exp_cdf(commits, 250) +
+        4.0 * exp_cdf(prs, 25) +
+        1.5 * exp_cdf(issues, 15) +
+        1.5 * exp_cdf(reviews, 10) +
+        1.0 * exp_cdf(repos, 5)
+    ) / 11.0
+
+    percentile = (1 - score) * 100
+
+    if percentile <= 2.0:
+        rank = "S"
+    elif percentile <= 12.5:
+        rank = "A+"
+    elif percentile <= 25.0:
+        rank = "A"
+    elif percentile <= 37.5:
+        rank = "A-"
+    elif percentile <= 50.0:
+        rank = "B+"
+    elif percentile <= 62.5:
+        rank = "B"
+    elif percentile <= 75.0:
+        rank = "B-"
+    elif percentile <= 87.5:
+        rank = "C+"
+    else:
+        rank = "C"
+
+    return rank, score, percentile
+
+def fetch_github_data(token, username):
     url = "https://api.github.com/graphql"
     query = """
     query($user: String!) {
       user(login: $user) {
         contributionsCollection {
+          totalCommitContributions
+          totalPullRequestContributions
+          totalIssueContributions
+          totalRepositoryContributions
+          totalPullRequestReviewContributions
           contributionCalendar {
             totalContributions
             weeks {
@@ -57,6 +104,18 @@ def fetch_contributions_graphql(token, username):
               }
             }
           }
+        }
+        pullRequests {
+          totalCount
+        }
+        issues {
+          totalCount
+        }
+        repositoriesContributedTo(contributionTypes: [COMMIT, ISSUE, PULL_REQUEST, REPOSITORY]) {
+          totalCount
+        }
+        followers {
+          totalCount
         }
       }
     }
@@ -72,56 +131,34 @@ def fetch_contributions_graphql(token, username):
     )
     with urllib.request.urlopen(req, timeout=15) as resp:
         data = json.loads(resp.read().decode("utf-8"))
-        cal = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]
-        return cal
+        u = data.get("data", {}).get("user", {})
+        cc = u.get("contributionsCollection", {})
+        cal = cc.get("contributionCalendar", {})
 
-def generate_sample_data():
-    """Generates realistic baseline contribution data for 53 weeks."""
-    today = datetime.date.today()
-    start_date = today - datetime.timedelta(days=364)
-    weeks = []
-    curr = start_date
-    total = 0
-    
-    # Deterministic pattern resembling active developer
-    day_idx = 0
-    for w in range(53):
-        days = []
-        for d in range(7):
-            date_str = curr.strftime("%Y-%m-%d")
-            # Create natural commit patterns
-            val = int(abs(math.sin(day_idx * 0.17) * 4 + math.cos(day_idx * 0.31) * 3))
-            if d in (0, 6): # weekend
-                val = max(0, val - 2)
-            if (day_idx % 19 == 0): # occasional busy sprint
-                val += 6
-            if (day_idx % 29 == 0): # quiet period
-                val = 0
-                
-            total += val
-            days.append({
-                "date": date_str,
-                "contributionCount": val,
-                "weekday": d
-            })
-            curr += datetime.timedelta(days=1)
-            day_idx += 1
-        weeks.append({"contributionDays": days})
-        
-    return {
-        "totalContributions": total,
-        "weeks": weeks
-    }
+        commits = cc.get("totalCommitContributions") or cal.get("totalContributions", 0)
+        prs = (u.get("pullRequests") or {}).get("totalCount") or cc.get("totalPullRequestContributions", 0)
+        issues = (u.get("issues") or {}).get("totalCount") or cc.get("totalIssueContributions", 0)
+        repos = (u.get("repositoriesContributedTo") or {}).get("totalCount") or cc.get("totalRepositoryContributions", 0)
+        reviews = cc.get("totalPullRequestReviewContributions", 0)
 
-def calculate_stats(calendar):
+        return {
+            "calendar": cal,
+            "commits": commits,
+            "prs": prs,
+            "issues": issues,
+            "repos": repos,
+            "reviews": reviews
+        }
+
+def calculate_stats(calendar, raw_metrics):
     total = calendar.get("totalContributions", 0)
     weeks = calendar.get("weeks", [])
-    
+
     all_days = []
     for w in weeks:
         for d in w["contributionDays"]:
             all_days.append(d)
-            
+
     # This week
     this_week_count = sum(d["contributionCount"] for d in weeks[-1]["contributionDays"])
     start_this_week = datetime.datetime.strptime(weeks[-1]["contributionDays"][0]["date"], "%Y-%m-%d").strftime("%b %d")
@@ -145,13 +182,12 @@ def calculate_stats(calendar):
     # Streaks
     current_streak = 0
     longest_streak = 0
-    current_streak_start = None
     longest_streak_start = None
     longest_streak_end = None
-    
+
     streak = 0
     s_start = None
-    
+
     for d in all_days:
         if d["contributionCount"] > 0:
             if streak == 0:
@@ -164,14 +200,12 @@ def calculate_stats(calendar):
         else:
             streak = 0
             s_start = None
-            
-    # Calculate current streak from the end backwards
+
     rev_days = list(reversed(all_days))
-    # skip trailing zeros if today has no commits yet
     idx = 0
     while idx < len(rev_days) and rev_days[idx]["contributionCount"] == 0 and idx < 2:
         idx += 1
-        
+
     c_start = None
     c_end = None
     while idx < len(rev_days) and rev_days[idx]["contributionCount"] > 0:
@@ -180,21 +214,28 @@ def calculate_stats(calendar):
         c_start = rev_days[idx]["date"]
         current_streak += 1
         idx += 1
-        
-    # Format streak strings
+
     if longest_streak_start and longest_streak_end:
         l_s = datetime.datetime.strptime(longest_streak_start, "%Y-%m-%d").strftime("%b %d")
         l_e = datetime.datetime.strptime(longest_streak_end, "%Y-%m-%d").strftime("%b %d")
         longest_range = f"{l_s} \u2192 {l_e}"
     else:
         longest_range = "--"
-        
+
     if c_start and c_end:
         c_s = datetime.datetime.strptime(c_start, "%Y-%m-%d").strftime("%b %d")
         c_e = datetime.datetime.strptime(c_end, "%Y-%m-%d").strftime("%b %d")
         curr_range = f"{c_s} \u2192 {c_e}"
     else:
         curr_range = "--"
+
+    commits = raw_metrics.get("commits") or total
+    prs = raw_metrics.get("prs", 0)
+    issues = raw_metrics.get("issues", 0)
+    repos = raw_metrics.get("repos", 0)
+    reviews = raw_metrics.get("reviews", 0)
+
+    rank, score, pct = calculate_rank(commits, prs, issues, reviews, repos)
 
     return {
         "total": total,
@@ -208,31 +249,34 @@ def calculate_stats(calendar):
         "longest_range": longest_range,
         "current_streak": current_streak,
         "curr_range": curr_range,
+        "commits": commits,
+        "prs": prs,
+        "issues": issues,
+        "repos": repos,
+        "rank": rank,
+        "rank_score": score,
+        "rank_pct": pct,
     }
 
 def render_svg(calendar, stats):
     weeks = calendar.get("weeks", [])
-    
-    # Dimensions
+
     svg_w = 900
-    svg_h = 470
-    
-    # Isometric grid constants
+    svg_h = 556
+
     origin_x = 158
     origin_y = 126
     dx_w = 11.2
     dy_w = 5.6
     dx_d = 11.2
     dy_d = 5.6
-    
+
     cubes_svg = []
-    
-    # Painter's algorithm: draw from back to front
+
     for w_idx, week in enumerate(weeks):
         for d_idx, day in enumerate(week["contributionDays"]):
             count = day["contributionCount"]
-            
-            # Level and height
+
             if count == 0:
                 level = 0
                 h = 4
@@ -248,53 +292,48 @@ def render_svg(calendar, stats):
             else:
                 level = 4
                 h = min(48, 28 + (count - 9) * 2.5)
-                
+
             colors = THEME["cubes"][level]
-            
-            # Calculate coordinates
-            # Base rhombus top vertex
+
             bx = origin_x + w_idx * dx_w - d_idx * dx_d
             by = origin_y + w_idx * dy_w + d_idx * dy_d
-            
-            # Elevated top face vertices
+
             T = (bx, by - h)
             R = (bx + dx_w, by + dy_w - h)
             B = (bx + dx_w - dx_d, by + dy_w + dy_d - h)
             L = (bx - dx_d, by + dy_d - h)
-            
-            # Base bottom face vertices
+
             B_base = (bx + dx_w - dx_d, by + dy_w + dy_d)
             L_base = (bx - dx_d, by + dy_d)
             R_base = (bx + dx_w, by + dy_w)
-            
-            # Build SVG paths
-            cube_group = []
-            
-            # Left Face (facing SW)
-            cube_group.append(
+
+            cube_group = [
                 f'<polygon points="{L[0]:.1f},{L[1]:.1f} {B[0]:.1f},{B[1]:.1f} {B_base[0]:.1f},{B_base[1]:.1f} {L_base[0]:.1f},{L_base[1]:.1f}" '
-                f'fill="{colors["left"]}" stroke="{colors["stroke"]}" stroke-width="0.4"/>'
-            )
-            # Right Face (facing SE)
-            cube_group.append(
+                f'fill="{colors["left"]}" stroke="{colors["stroke"]}" stroke-width="0.4"/>',
                 f'<polygon points="{R[0]:.1f},{R[1]:.1f} {B[0]:.1f},{B[1]:.1f} {B_base[0]:.1f},{B_base[1]:.1f} {R_base[0]:.1f},{R_base[1]:.1f}" '
-                f'fill="{colors["right"]}" stroke="{colors["stroke"]}" stroke-width="0.4"/>'
-            )
-            # Top Face (rhombus)
-            cube_group.append(
+                f'fill="{colors["right"]}" stroke="{colors["stroke"]}" stroke-width="0.4"/>',
                 f'<polygon points="{T[0]:.1f},{T[1]:.1f} {R[0]:.1f},{R[1]:.1f} {B[0]:.1f},{B[1]:.1f} {L[0]:.1f},{L[1]:.1f}" '
                 f'fill="{colors["top"]}" stroke="{colors["stroke"]}" stroke-width="0.5"/>'
-            )
-            
+            ]
             cubes_svg.append("".join(cube_group))
-            
+
     cubes_markup = "\n    ".join(cubes_svg)
-    
+
     total_fmt = f"{stats['total']:,}"
     avg_fmt = f"{stats['average']:.2f}"
-    
-    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" width="{svg_w}" height="{svg_h}" fill="none" role="img" aria-label="{USERNAME} — 3D Isometric Contribution Graph">
-  <title>{USERNAME} — 3D Isometric Contribution Graph</title>
+    commits_fmt = f"{stats['commits']:,}"
+    prs_fmt = f"{stats['prs']:,}"
+    issues_fmt = f"{stats['issues']:,}"
+    repos_fmt = f"{stats['repos']:,}"
+
+    # Rank Gauge Calculation
+    circ_r = 25
+    circumference = 2 * math.pi * circ_r
+    score_clamped = min(1.0, max(0.08, stats["rank_score"]))
+    dash_offset = circumference * (1.0 - score_clamped)
+
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" width="{svg_w}" height="{svg_h}" fill="none" role="img" aria-label="{USERNAME} — 3D Isometric Contribution Graph &amp; Developer Metrics">
+  <title>{USERNAME} — 3D Isometric Contribution Graph &amp; Developer Metrics</title>
   <defs>
     <!-- Card Gradient -->
     <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -304,7 +343,7 @@ def render_svg(calendar, stats):
     </linearGradient>
 
     <!-- Deep Wine Glow -->
-    <radialGradient id="wineAura" cx="35%" cy="50%" r="55%">
+    <radialGradient id="wineAura" cx="35%" cy="45%" r="55%">
       <stop offset="0%" stop-color="{THEME['wine_glow']}" stop-opacity="0.16"/>
       <stop offset="50%" stop-color="{THEME['wine_primary']}" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="{THEME['card_bg_start']}" stop-opacity="0"/>
@@ -335,14 +374,20 @@ def render_svg(calendar, stats):
       }}
       .card-header {{
         font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        font-size: 11px;
+        font-size: 10.5px;
         font-weight: 700;
-        letter-spacing: 1px;
+        letter-spacing: 1.2px;
         fill: {THEME['wine_glow']};
       }}
       .metric-val {{
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         font-size: 24px;
+        font-weight: 800;
+        fill: {THEME['text_main']};
+      }}
+      .metric-val-sm {{
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        font-size: 20px;
         font-weight: 800;
         fill: {THEME['text_main']};
       }}
@@ -358,9 +403,16 @@ def render_svg(calendar, stats):
         font-weight: 600;
         fill: {THEME['text_main']};
       }}
-      .metric-sub {{
+      .metric-tag {{
         font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         font-size: 9.5px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        fill: {THEME['wine_glow']};
+      }}
+      .metric-sub {{
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 9px;
         fill: {THEME['text_muted']};
       }}
       .avg-text {{
@@ -416,88 +468,146 @@ def render_svg(calendar, stats):
   </g>
 
   <!-- ==================== TOP-RIGHT: CONTRIBUTIONS CARD ==================== -->
-  <g transform="translate(534, 60)">
-    <!-- Panel Box -->
-    <rect width="346" height="120" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
+  <g transform="translate(534, 58)">
+    <rect width="346" height="114" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
     
-    <!-- Header -->
     <circle cx="16" cy="18" r="3" fill="{THEME['wine_glow']}"/>
     <text x="26" y="22" class="card-header">CONTRIBUTIONS</text>
 
-    <!-- Metric Columns -->
     <!-- Col 1: Total -->
-    <g transform="translate(24, 40)">
-      <text x="0" y="22" class="metric-val">{total_fmt}</text>
-      <text x="0" y="38" class="metric-lbl">Total</text>
-      <text x="0" y="52" class="metric-sub">{stats['total_range']}</text>
+    <g transform="translate(24, 38)">
+      <text x="0" y="20" class="metric-val">{total_fmt}</text>
+      <text x="0" y="34" class="metric-lbl">Total</text>
+      <text x="0" y="47" class="metric-sub">{stats['total_range']}</text>
     </g>
 
     <!-- Col 2: This week -->
-    <g transform="translate(132, 40)">
-      <text x="0" y="22" class="metric-val">{stats['this_week']}</text>
-      <text x="0" y="38" class="metric-lbl">This week</text>
-      <text x="0" y="52" class="metric-sub">{stats['this_week_range']}</text>
+    <g transform="translate(132, 38)">
+      <text x="0" y="20" class="metric-val">{stats['this_week']}</text>
+      <text x="0" y="34" class="metric-lbl">This week</text>
+      <text x="0" y="47" class="metric-sub">{stats['this_week_range']}</text>
     </g>
 
     <!-- Col 3: Best day -->
-    <g transform="translate(236, 40)">
-      <text x="0" y="22" class="metric-val">{stats['best_day']}</text>
-      <text x="0" y="38" class="metric-lbl">Best day</text>
-      <text x="0" y="52" class="metric-sub">{stats['best_day_date']}</text>
+    <g transform="translate(236, 38)">
+      <text x="0" y="20" class="metric-val">{stats['best_day']}</text>
+      <text x="0" y="34" class="metric-lbl">Best day</text>
+      <text x="0" y="47" class="metric-sub">{stats['best_day_date']}</text>
     </g>
 
-    <!-- Average subline -->
-    <text x="346" y="136" text-anchor="end" class="avg-text">
+    <text x="346" y="130" text-anchor="end" class="avg-text">
       Average: <tspan fill="{THEME['wine_glow']}" font-weight="700">{avg_fmt}</tspan> / day
     </text>
   </g>
 
   <!-- ==================== BOTTOM-LEFT: STREAKS CARD ==================== -->
-  <g transform="translate(24, 342)">
-    <!-- Panel Box -->
-    <rect width="250" height="98" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
+  <g transform="translate(24, 332)">
+    <rect width="250" height="96" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
     
-    <!-- Header -->
     <circle cx="16" cy="18" r="3" fill="{THEME['wine_glow']}"/>
     <text x="26" y="22" class="card-header">STREAKS</text>
 
     <!-- Col 1: Longest -->
-    <g transform="translate(20, 38)">
-      <text x="0" y="20" class="metric-val-wine">{stats['longest_streak']} <tspan fill="{THEME['text_main']}" font-size="14" font-weight="600">days</tspan></text>
+    <g transform="translate(20, 36)">
+      <text x="0" y="20" class="metric-val-wine">{stats['longest_streak']} <tspan fill="{THEME['text_main']}" font-size="13" font-weight="600">days</tspan></text>
       <text x="0" y="34" class="metric-lbl">Longest</text>
-      <text x="0" y="47" class="metric-sub">{stats['longest_range']}</text>
+      <text x="0" y="46" class="metric-sub">{stats['longest_range']}</text>
     </g>
 
     <!-- Col 2: Current -->
-    <g transform="translate(132, 38)">
-      <text x="0" y="20" class="metric-val-wine">{stats['current_streak']} <tspan fill="{THEME['text_main']}" font-size="14" font-weight="600">days</tspan></text>
+    <g transform="translate(132, 36)">
+      <text x="0" y="20" class="metric-val-wine">{stats['current_streak']} <tspan fill="{THEME['text_main']}" font-size="13" font-weight="600">days</tspan></text>
       <text x="0" y="34" class="metric-lbl">Current</text>
-      <text x="0" y="47" class="metric-sub">{stats['curr_range']}</text>
+      <text x="0" y="46" class="metric-sub">{stats['curr_range']}</text>
+    </g>
+  </g>
+
+  <!-- ==================== BOTTOM BAR: DEVELOPER STATS & RANK ==================== -->
+  <g transform="translate(24, 444)">
+    <rect width="852" height="94" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
+
+    <!-- Section 1: Rank Badge -->
+    <g transform="translate(20, 16)">
+      <!-- Outer Track Circle -->
+      <circle cx="31" cy="31" r="{circ_r}" fill="none" stroke="#221D27" stroke-width="3.5"/>
+      <!-- Glowing Progress Arc -->
+      <circle cx="31" cy="31" r="{circ_r}" fill="none" stroke="{THEME['wine_glow']}" stroke-width="3.5"
+              stroke-linecap="round" stroke-dasharray="{circumference:.1f}" stroke-dashoffset="{dash_offset:.1f}"
+              transform="rotate(-90 31 31)" filter="url(#accentGlow)"/>
+      <!-- Rank Letter Grade -->
+      <text x="31" y="38" text-anchor="middle" font-family="'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="900" fill="{THEME['text_main']}">{stats['rank']}</text>
+      
+      <!-- Rank Meta Label -->
+      <g transform="translate(70, 14)">
+        <text x="0" y="10" class="metric-tag">DEVELOPER RANK</text>
+        <text x="0" y="24" class="metric-sub">Percentile Grade</text>
+        <text x="0" y="38" font-family="'SFMono-Regular', Consolas, monospace" font-size="11" font-weight="700" fill="{THEME['text_main']}">Tier: <tspan fill="{THEME['wine_glow']}">{stats['rank']}</tspan></text>
+      </g>
+    </g>
+
+    <!-- Divider 1 -->
+    <line x1="210" y1="18" x2="210" y2="76" stroke="#211C24" stroke-width="1"/>
+
+    <!-- Section 2: Total Commits -->
+    <g transform="translate(230, 22)">
+      <circle cx="3" cy="7" r="3" fill="{THEME['wine_glow']}"/>
+      <text x="12" y="10" class="metric-tag">TOTAL COMMITS</text>
+      <text x="12" y="33" class="metric-val-sm">{commits_fmt}</text>
+      <text x="12" y="47" class="metric-sub">Code activity</text>
+    </g>
+
+    <!-- Divider 2 -->
+    <line x1="376" y1="18" x2="376" y2="76" stroke="#211C24" stroke-width="1"/>
+
+    <!-- Section 3: Pull Requests -->
+    <g transform="translate(396, 22)">
+      <circle cx="3" cy="7" r="3" fill="{THEME['wine_glow']}"/>
+      <text x="12" y="10" class="metric-tag">PULL REQUESTS</text>
+      <text x="12" y="33" class="metric-val-sm">{prs_fmt}</text>
+      <text x="12" y="47" class="metric-sub">Merged &amp; authored</text>
+    </g>
+
+    <!-- Divider 3 -->
+    <line x1="538" y1="18" x2="538" y2="76" stroke="#211C24" stroke-width="1"/>
+
+    <!-- Section 4: Total Issues -->
+    <g transform="translate(558, 22)">
+      <circle cx="3" cy="7" r="3" fill="{THEME['wine_glow']}"/>
+      <text x="12" y="10" class="metric-tag">CODE ISSUES</text>
+      <text x="12" y="33" class="metric-val-sm">{issues_fmt}</text>
+      <text x="12" y="47" class="metric-sub">Reported &amp; tracked</text>
+    </g>
+
+    <!-- Divider 4 -->
+    <line x1="696" y1="18" x2="696" y2="76" stroke="#211C24" stroke-width="1"/>
+
+    <!-- Section 5: Contributed To -->
+    <g transform="translate(716, 22)">
+      <circle cx="3" cy="7" r="3" fill="{THEME['wine_glow']}"/>
+      <text x="12" y="10" class="metric-tag">CONTRIBUTED TO</text>
+      <text x="12" y="33" class="metric-val-sm">{repos_fmt} <tspan font-size="12" font-weight="600" fill="{THEME['text_muted']}">repos</tspan></text>
+      <text x="12" y="47" class="metric-sub">Open-source impact</text>
     </g>
   </g>
 </svg>"""
     return svg
 
 def main():
-    cal = None
-    if GITHUB_TOKEN:
-        try:
-            print("Fetching live GitHub contributions via GraphQL...")
-            cal = fetch_contributions_graphql(GITHUB_TOKEN, USERNAME)
-            print("Successfully fetched live contributions!")
-        except Exception as e:
-            print(f"GraphQL fetch failed: {e}. Falling back to baseline data.")
-            
-    if not cal:
-        cal = generate_sample_data()
-        
-    stats = calculate_stats(cal)
+    if not GITHUB_TOKEN:
+        sys.exit("Error: GITHUB_TOKEN environment variable is required to fetch real GitHub data.")
+
+    print(f"Fetching live GitHub contributions & metrics for {USERNAME} via GraphQL...")
+    raw_data = fetch_github_data(GITHUB_TOKEN, USERNAME)
+    print("Successfully fetched live GitHub data!")
+
+    cal = raw_data["calendar"]
+    stats = calculate_stats(cal, raw_data)
     svg_content = render_svg(cal, stats)
-    
+
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(svg_content)
-    print(f"Generated 3D contribution graph SVG at {OUTPUT_PATH}")
+    print(f"Generated 3D contribution graph with live Developer Stats & Rank at {OUTPUT_PATH}")
 
 if __name__ == "__main__":
     main()
