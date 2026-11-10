@@ -37,7 +37,7 @@
 </div>
 
 <div align="center">
-  <img src="assets/contribution-3d.svg" width="100%" alt="0xraiven 3D Isometric Contribution Graph" />
+  <img src="assets/contribution-3d.svg?v=557" width="100%" alt="0xraiven 3D Isometric Contribution Graph" />
 </div>
 
 <br/>

@@ -10,6 +10,7 @@ import json
 import urllib.request
 import datetime
 import math
+import re
 
 USERNAME = os.environ.get("GH_USERNAME") or os.environ.get("GITHUB_REPOSITORY_OWNER") or "0xraiven"
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "assets/contribution-3d.svg")
@@ -638,6 +639,20 @@ def main():
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(svg_content)
     print(f"Generated 3D contribution graph with live Developer Stats & Rank at {OUTPUT_PATH}")
+
+    # Update cache-buster query param in README.md
+    try:
+        if os.path.exists("README.md"):
+            with open("README.md", "r", encoding="utf-8") as rf:
+                readme = rf.read()
+            timestamp = int(datetime.datetime.now().timestamp())
+            new_readme = re.sub(r'assets/contribution-3d\.svg(?:\?v=[^\s\"\'>]+)?', f'assets/contribution-3d.svg?v={timestamp}', readme)
+            if new_readme != readme:
+                with open("README.md", "w", encoding="utf-8") as wf:
+                    wf.write(new_readme)
+                print(f"Updated README.md cache-buster query param to ?v={timestamp}")
+    except Exception as e:
+        print(f"README cache-buster update note: {e}")
 
 if __name__ == "__main__":
     main()
