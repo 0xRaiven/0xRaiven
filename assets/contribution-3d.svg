@@ -100,7 +100,7 @@
 
     <!-- Main Title -->
     <text x="68" y="29" class="mono-title">
-      518 contributions in the last year
+      528 contributions in the last year
     </text>
 
     <!-- Top Right 2D | 3D Pill Toggle -->
@@ -482,6 +482,8 @@
     <polygon points="662.0,441.2 673.2,446.8 673.2,450.8 662.0,445.2" fill="#131218" stroke="#221D27" stroke-width="0.4"/><polygon points="684.4,441.2 673.2,446.8 673.2,450.8 684.4,445.2" fill="#0F0E14" stroke="#221D27" stroke-width="0.4"/><polygon points="673.2,435.6 684.4,441.2 673.2,446.8 662.0,441.2" fill="#16151D" stroke="#221D27" stroke-width="0.5"/>
     <polygon points="650.8,440.8 662.0,446.4 662.0,456.4 650.8,450.8" fill="#440B1D" stroke="#701633" stroke-width="0.4"/><polygon points="673.2,440.8 662.0,446.4 662.0,456.4 673.2,450.8" fill="#300714" stroke="#701633" stroke-width="0.4"/><polygon points="662.0,435.2 673.2,440.8 662.0,446.4 650.8,440.8" fill="#5C1029" stroke="#701633" stroke-width="0.5"/>
     <polygon points="729.2,374.8 740.4,380.4 740.4,428.4 729.2,422.8" fill="#D9366B" stroke="#FF80A8" stroke-width="0.4"/><polygon points="751.6,374.8 740.4,380.4 740.4,428.4 751.6,422.8" fill="#A6224D" stroke="#FF80A8" stroke-width="0.4"/><polygon points="740.4,369.2 751.6,374.8 740.4,380.4 729.2,374.8" fill="#FF5C8D" stroke="#FF80A8" stroke-width="0.5"/>
+    <polygon points="718.0,410.4 729.2,416.0 729.2,434.0 718.0,428.4" fill="#6E1631" stroke="#A8244B" stroke-width="0.4"/><polygon points="740.4,410.4 729.2,416.0 729.2,434.0 740.4,428.4" fill="#500F23" stroke="#A8244B" stroke-width="0.4"/><polygon points="729.2,404.8 740.4,410.4 729.2,416.0 718.0,410.4" fill="#8B1E3F" stroke="#A8244B" stroke-width="0.5"/>
+    <polygon points="706.8,430.0 718.0,435.6 718.0,439.6 706.8,434.0" fill="#131218" stroke="#221D27" stroke-width="0.4"/><polygon points="729.2,430.0 718.0,435.6 718.0,439.6 729.2,434.0" fill="#0F0E14" stroke="#221D27" stroke-width="0.4"/><polygon points="718.0,424.4 729.2,430.0 718.0,435.6 706.8,430.0" fill="#16151D" stroke="#221D27" stroke-width="0.5"/>
   </g>
 
   <!-- ==================== TOP-RIGHT: CONTRIBUTIONS CARD ==================== -->
@@ -496,16 +498,16 @@
     <!-- Metric Columns -->
     <!-- Col 1: Total -->
     <g transform="translate(24, 40)">
-      <text x="0" y="22" class="metric-val">518</text>
+      <text x="0" y="22" class="metric-val">528</text>
       <text x="0" y="38" class="metric-lbl">Total</text>
-      <text x="0" y="52" class="metric-sub">Nov 09 → Nov 08</text>
+      <text x="0" y="52" class="metric-sub">Nov 09 → Nov 10</text>
     </g>
 
     <!-- Col 2: This week -->
     <g transform="translate(132, 40)">
-      <text x="0" y="22" class="metric-val">47</text>
+      <text x="0" y="22" class="metric-val">57</text>
       <text x="0" y="38" class="metric-lbl">This week</text>
-      <text x="0" y="52" class="metric-sub">Nov 08 → Nov 08</text>
+      <text x="0" y="52" class="metric-sub">Nov 08 → Nov 10</text>
     </g>
 
     <!-- Col 3: Best day -->
@@ -517,7 +519,7 @@
 
     <!-- Average subline -->
     <text x="346" y="136" text-anchor="end" class="avg-text">
-      Average: <tspan fill="#B8325A" font-weight="700">1.42</tspan> / day
+      Average: <tspan fill="#B8325A" font-weight="700">1.44</tspan> / day
     </text>
   </g>
 
@@ -539,9 +541,9 @@
 
     <!-- Col 2: Current -->
     <g transform="translate(132, 38)">
-      <text x="0" y="20" class="metric-val-wine">2 <tspan fill="#E8E6E8" font-size="14" font-weight="600">days</tspan></text>
+      <text x="0" y="20" class="metric-val-wine">3 <tspan fill="#E8E6E8" font-size="14" font-weight="600">days</tspan></text>
       <text x="0" y="34" class="metric-lbl">Current</text>
-      <text x="0" y="47" class="metric-sub">Nov 07 → Nov 08</text>
+      <text x="0" y="47" class="metric-sub">Nov 07 → Nov 09</text>
     </g>
   </g>
 </svg>
