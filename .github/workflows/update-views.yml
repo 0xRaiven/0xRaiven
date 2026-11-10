@@ -59,4 +59,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add assets/profile-views.svg README.md
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(telemetry): update profile views count [skip ci]" && git push)
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(telemetry): update profile views count [skip ci]"
+            git pull --rebase origin main
+            git push
+          fi
