@@ -113,7 +113,7 @@
 
     <!-- Main Title -->
     <text x="68" y="29" class="mono-title">
-      563 contributions in the last year
+      567 contributions in the last year
     </text>
 
     <!-- Top Right 2D | 3D Pill Toggle -->
@@ -498,6 +498,7 @@
     <polygon points="718.0,400.4 729.2,406.0 729.2,434.0 718.0,428.4" fill="#942647" stroke="#D63C6B" stroke-width="0.4"/><polygon points="740.4,400.4 729.2,406.0 729.2,434.0 740.4,428.4" fill="#6E1833" stroke="#D63C6B" stroke-width="0.4"/><polygon points="729.2,394.8 740.4,400.4 729.2,406.0 718.0,400.4" fill="#B8325A" stroke="#D63C6B" stroke-width="0.5"/>
     <polygon points="706.8,386.0 718.0,391.6 718.0,439.6 706.8,434.0" fill="#D9366B" stroke="#FF80A8" stroke-width="0.4"/><polygon points="729.2,386.0 718.0,391.6 718.0,439.6 729.2,434.0" fill="#A6224D" stroke="#FF80A8" stroke-width="0.4"/><polygon points="718.0,380.4 729.2,386.0 718.0,391.6 706.8,386.0" fill="#FF5C8D" stroke="#FF80A8" stroke-width="0.5"/>
     <polygon points="695.6,411.6 706.8,417.2 706.8,445.2 695.6,439.6" fill="#942647" stroke="#D63C6B" stroke-width="0.4"/><polygon points="718.0,411.6 706.8,417.2 706.8,445.2 718.0,439.6" fill="#6E1833" stroke="#D63C6B" stroke-width="0.4"/><polygon points="706.8,406.0 718.0,411.6 706.8,417.2 695.6,411.6" fill="#B8325A" stroke="#D63C6B" stroke-width="0.5"/>
+    <polygon points="684.4,427.2 695.6,432.8 695.6,450.8 684.4,445.2" fill="#6E1631" stroke="#A8244B" stroke-width="0.4"/><polygon points="706.8,427.2 695.6,432.8 695.6,450.8 706.8,445.2" fill="#500F23" stroke="#A8244B" stroke-width="0.4"/><polygon points="695.6,421.6 706.8,427.2 695.6,432.8 684.4,427.2" fill="#8B1E3F" stroke="#A8244B" stroke-width="0.5"/>
   </g>
 
   <!-- ==================== TOP-RIGHT: CONTRIBUTIONS CARD ==================== -->
@@ -509,16 +510,16 @@
 
     <!-- Col 1: Total -->
     <g transform="translate(24, 38)">
-      <text x="0" y="20" class="metric-val">563</text>
+      <text x="0" y="20" class="metric-val">567</text>
       <text x="0" y="34" class="metric-lbl">Total</text>
       <text x="0" y="47" class="metric-sub">Nov 2025 → Nov 2026</text>
     </g>
 
     <!-- Col 2: This week -->
     <g transform="translate(132, 38)">
-      <text x="0" y="20" class="metric-val">92</text>
+      <text x="0" y="20" class="metric-val">96</text>
       <text x="0" y="34" class="metric-lbl">This week</text>
-      <text x="0" y="47" class="metric-sub">Nov 08 → Nov 11</text>
+      <text x="0" y="47" class="metric-sub">Nov 08 → Nov 12</text>
     </g>
 
     <!-- Col 3: Best day -->
@@ -529,7 +530,7 @@
     </g>
 
     <text x="346" y="130" text-anchor="end" class="avg-text">
-      Average: <tspan fill="#B8325A" font-weight="700">1.53</tspan> / day
+      Average: <tspan fill="#B8325A" font-weight="700">1.54</tspan> / day
     </text>
   </g>
 
@@ -549,9 +550,9 @@
 
     <!-- Col 2: Current -->
     <g transform="translate(132, 36)">
-      <text x="0" y="20" class="metric-val-wine">5 <tspan fill="#E8E6E8" font-size="13" font-weight="600">days</tspan></text>
+      <text x="0" y="20" class="metric-val-wine">6 <tspan fill="#E8E6E8" font-size="13" font-weight="600">days</tspan></text>
       <text x="0" y="34" class="metric-lbl">Current</text>
-      <text x="0" y="46" class="metric-sub">Nov 07 → Nov 11</text>
+      <text x="0" y="46" class="metric-sub">Nov 07 → Nov 12</text>
     </g>
   </g>
 
@@ -565,7 +566,7 @@
       <circle cx="31" cy="31" r="25" fill="none" stroke="#221D27" stroke-width="3.5"/>
       <!-- Glowing Progress Arc -->
       <circle cx="31" cy="31" r="25" fill="none" stroke="#B8325A" stroke-width="3.5"
-              stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="60.8"
+              stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="60.6"
               transform="rotate(-90 31 31)" filter="url(#accentGlow)"/>
       <!-- Rank Letter Grade -->
       <text x="31" y="38" text-anchor="middle" font-family="'SFMono-Regular', Consolas, monospace" font-size="20" font-weight="900" fill="#E8E6E8">A-</text>
@@ -585,7 +586,7 @@
     <g transform="translate(230, 22)">
       <circle cx="3" cy="7" r="3" fill="#B8325A"/>
       <text x="12" y="10" class="metric-tag">TOTAL COMMITS</text>
-      <text x="12" y="33" class="metric-val-sm">563</text>
+      <text x="12" y="33" class="metric-val-sm">567</text>
       <text x="12" y="47" class="metric-sub">Code activity</text>
     </g>
 
