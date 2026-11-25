@@ -497,6 +497,7 @@
     <polygon points="729.2,394.8 740.4,400.4 740.4,428.4 729.2,422.8" fill="#942647" stroke="#D63C6B" stroke-width="0.4"/><polygon points="751.6,394.8 740.4,400.4 740.4,428.4 751.6,422.8" fill="#6E1833" stroke="#D63C6B" stroke-width="0.4"/><polygon points="740.4,389.2 751.6,394.8 740.4,400.4 729.2,394.8" fill="#B8325A" stroke="#D63C6B" stroke-width="0.5"/>
     <polygon points="718.0,418.4 729.2,424.0 729.2,434.0 718.0,428.4" fill="#440B1D" stroke="#701633" stroke-width="0.4"/><polygon points="740.4,418.4 729.2,424.0 729.2,434.0 740.4,428.4" fill="#300714" stroke="#701633" stroke-width="0.4"/><polygon points="729.2,412.8 740.4,418.4 729.2,424.0 718.0,418.4" fill="#5C1029" stroke="#701633" stroke-width="0.5"/>
     <polygon points="706.8,430.0 718.0,435.6 718.0,439.6 706.8,434.0" fill="#131218" stroke="#221D27" stroke-width="0.4"/><polygon points="729.2,430.0 718.0,435.6 718.0,439.6 729.2,434.0" fill="#0F0E14" stroke="#221D27" stroke-width="0.4"/><polygon points="718.0,424.4 729.2,430.0 718.0,435.6 706.8,430.0" fill="#16151D" stroke="#221D27" stroke-width="0.5"/>
+    <polygon points="695.6,435.6 706.8,441.2 706.8,445.2 695.6,439.6" fill="#131218" stroke="#221D27" stroke-width="0.4"/><polygon points="718.0,435.6 706.8,441.2 706.8,445.2 718.0,439.6" fill="#0F0E14" stroke="#221D27" stroke-width="0.4"/><polygon points="706.8,430.0 718.0,435.6 706.8,441.2 695.6,435.6" fill="#16151D" stroke="#221D27" stroke-width="0.5"/>
   </g>
 
   <!-- ==================== TOP-RIGHT: CONTRIBUTIONS CARD ==================== -->
@@ -517,7 +518,7 @@
     <g transform="translate(132, 38)">
       <text x="0" y="20" class="metric-val">10</text>
       <text x="0" y="34" class="metric-lbl">This week</text>
-      <text x="0" y="47" class="metric-sub">Nov 22 → Nov 24</text>
+      <text x="0" y="47" class="metric-sub">Nov 22 → Nov 25</text>
     </g>
 
     <!-- Col 3: Best day -->
