@@ -2062,7 +2062,6 @@
       <rect x="663" y="57" width="3" height="3" fill="#FF6B98"/>
       <rect x="582" y="96" width="3" height="3" fill="#FFC2D4"/>
       <rect x="741" y="96" width="3" height="3" fill="#FF6B98"/>
-      <rect x="672" y="54" width="3" height="3" fill="#FF6B98"/>
     </g>
     <rect x="567" y="117" width="3" height="3" fill="#FF5C8D" class="p1"/>
     <rect x="615" y="102" width="3" height="3" fill="#B8325A" class="p2"/>
@@ -2075,5 +2074,5 @@
     <rect x="549" y="114" width="3" height="3" fill="#B8325A" class="p1"/>
   </g>
 
-  <text x="868" y="220" text-anchor="end" class="claude-sans" font-size="10" font-weight="500" fill="#57525C">Stage IV · 865 commits</text>
+  <text x="868" y="220" text-anchor="end" class="claude-sans" font-size="10" font-weight="500" fill="#57525C">Stage IV · 864 commits</text>
 </svg>
