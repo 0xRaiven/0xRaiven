@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 236" width="900" height="236" fill="none" role="img" aria-label="0xraiven — Hero Card &amp; Profile Telemetry">
-  <title>0xraiven — Pixel Wine-Blossom Bonsai &amp; Profile Telemetry</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 236" width="900" height="236" fill="none" role="img" aria-label="0xRaiven — Hero Card &amp; Profile Telemetry">
+  <title>0xRaiven — Pixel Wine-Blossom Bonsai &amp; Profile Telemetry</title>
   <defs>
     <linearGradient id="heroBg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0E0D12"/>
@@ -84,7 +84,7 @@
 
   <!-- Left Zone: Minimal Username & Contact -->
   <g transform="translate(44, 82)">
-    <text x="0" y="28" class="claude-serif" font-size="44" font-weight="700" fill="#E8E6E8">0xraiven <tspan class="claude-sans" font-size="14" font-weight="500" fill="#B8325A">/ r41n</tspan></text>
+    <text x="0" y="28" class="claude-serif" font-size="44" font-weight="700" fill="#E8E6E8">0xRaiven <tspan class="claude-sans" font-size="14" font-weight="500" fill="#B8325A">/ r41n</tspan></text>
     <line x1="0" y1="46" x2="260" y2="46" stroke="url(#accentRule)" stroke-width="1.5"/>
     <text x="0" y="74" class="claude-sans" font-size="12.5" fill="#8E8A90">0xraiven@proton.me <tspan fill="#3D3545"> · </tspan> github.com/0xraiven</text>
   </g>
@@ -609,14 +609,6 @@
     <rect x="570" y="201" width="3" height="3" fill="#241E29"/>
     <rect x="567" y="198" width="3" height="3" fill="#5C1029"/>
     <rect x="567" y="195" width="3" height="3" fill="#8B1E3F"/>
-    <rect x="585" y="201" width="3" height="3" fill="#2A2330"/>
-    <rect x="588" y="201" width="3" height="3" fill="#3D3445"/>
-    <rect x="591" y="201" width="3" height="3" fill="#241E29"/>
-    <rect x="741" y="201" width="3" height="3" fill="#2A2330"/>
-    <rect x="744" y="201" width="3" height="3" fill="#3D3445"/>
-    <rect x="747" y="201" width="3" height="3" fill="#241E29"/>
-    <rect x="744" y="198" width="3" height="3" fill="#5C1029"/>
-    <rect x="744" y="195" width="3" height="3" fill="#8B1E3F"/>
     <rect x="645" y="174" width="3" height="3" fill="#1F1826"/>
     <rect x="648" y="174" width="3" height="3" fill="#31273D"/>
     <rect x="651" y="174" width="3" height="3" fill="#473957"/>
