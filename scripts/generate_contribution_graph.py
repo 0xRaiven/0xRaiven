@@ -467,23 +467,15 @@ def render_svg(calendar, stats):
   </defs>
 
   <!-- Container Base -->
-  <rect x="1" y="1" width="{svg_w - 2}" height="{svg_h - 2}" rx="10" fill="url(#cardBg)" stroke="{THEME['card_border']}" stroke-width="1"/>
-  <rect x="1" y="1" width="{svg_w - 2}" height="{svg_h - 2}" rx="10" fill="url(#wineAura)"/>
+  <rect x="0" y="0" width="{svg_w}" height="{svg_h}" rx="10" fill="url(#cardBg)"/>
+  <rect x="0" y="0" width="{svg_w}" height="{svg_h}" rx="10" fill="url(#wineAura)"/>
 
-  <!-- Top Header Bar -->
-  <g transform="translate(0, 0)">
-    <circle cx="28" cy="25" r="3.5" fill="{THEME['wine_glow']}" filter="url(#accentGlow)"/>
-
-    <!-- Integrated Contribution Graph Heading -->
-    <text x="42" y="30" class="heading-title">Contribution Graph</text>
-
-    <!-- Right-aligned Total Contributions Summary -->
-    <text x="{svg_w - 24}" y="29" text-anchor="end" class="heading-sub">
-      <tspan fill="{THEME['text_main']}" font-weight="600">{total_fmt}</tspan> contributions in the last year
+  <!-- Integrated Top-Left Title (no separate header bar) -->
+  <g transform="translate(28, 28)">
+    <text x="0" y="24" class="claude-serif" font-size="28" font-weight="700" fill="{THEME['text_main']}">Contribution Graph</text>
+    <text x="0" y="45" class="claude-sans" font-size="12" fill="{THEME['text_muted']}">
+      <tspan fill="{THEME['wine_glow']}" font-weight="600">{total_fmt}</tspan> contributions · {stats['total_range']}
     </text>
-
-    <!-- Header Divider Line -->
-    <line x1="20" y1="46" x2="{svg_w - 20}" y2="46" stroke="#211C24" stroke-width="1"/>
   </g>
 
   <!-- ==================== 3D ISOMETRIC CONTRIBUTION GRAPH ==================== -->
@@ -492,57 +484,57 @@ def render_svg(calendar, stats):
   </g>
 
   <!-- ==================== TOP-RIGHT: CONTRIBUTIONS CARD ==================== -->
-  <g transform="translate(534, 58)">
-    <rect width="346" height="114" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
+  <g transform="translate(502, 24)">
+    <rect width="374" height="120" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
     
     <circle cx="16" cy="18" r="3" fill="{THEME['wine_glow']}"/>
     <text x="26" y="22" class="card-header">Contributions</text>
 
     <!-- Col 1: Total -->
-    <g transform="translate(24, 38)">
+    <g transform="translate(22, 40)">
       <text x="0" y="20" class="metric-val">{total_fmt}</text>
-      <text x="0" y="34" class="metric-lbl">Total</text>
-      <text x="0" y="47" class="metric-sub">{stats['total_range']}</text>
+      <text x="0" y="37" class="metric-lbl">Total</text>
+      <text x="0" y="52" class="metric-sub">{stats['total_range']}</text>
     </g>
 
     <!-- Col 2: This week -->
-    <g transform="translate(132, 38)">
+    <g transform="translate(160, 40)">
       <text x="0" y="20" class="metric-val">{stats['this_week']}</text>
-      <text x="0" y="34" class="metric-lbl">This week</text>
-      <text x="0" y="47" class="metric-sub">{stats['this_week_range']}</text>
+      <text x="0" y="37" class="metric-lbl">This week</text>
+      <text x="0" y="52" class="metric-sub">{stats['this_week_range']}</text>
     </g>
 
     <!-- Col 3: Best day -->
-    <g transform="translate(236, 38)">
+    <g transform="translate(284, 40)">
       <text x="0" y="20" class="metric-val">{stats['best_day']}</text>
-      <text x="0" y="34" class="metric-lbl">Best day</text>
-      <text x="0" y="47" class="metric-sub">{stats['best_day_date']}</text>
+      <text x="0" y="37" class="metric-lbl">Best day</text>
+      <text x="0" y="52" class="metric-sub">{stats['best_day_date']}</text>
     </g>
 
-    <text x="346" y="130" text-anchor="end" class="avg-text">
+    <text x="374" y="138" text-anchor="end" class="avg-text">
       Average: <tspan fill="{THEME['wine_glow']}" font-weight="700">{avg_fmt}</tspan> / day
     </text>
   </g>
 
   <!-- ==================== BOTTOM-LEFT: STREAKS CARD ==================== -->
   <g transform="translate(24, 346)">
-    <rect width="250" height="96" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
+    <rect width="264" height="100" rx="6" fill="url(#panelBg)" stroke="{THEME['panel_border']}" stroke-width="1"/>
     
     <circle cx="16" cy="18" r="3" fill="{THEME['wine_glow']}"/>
     <text x="26" y="22" class="card-header">Streaks</text>
 
     <!-- Col 1: Longest -->
-    <g transform="translate(20, 36)">
+    <g transform="translate(22, 38)">
       <text x="0" y="20" class="metric-val-wine">{stats['longest_streak']} <tspan class="claude-sans" fill="{THEME['text_main']}" font-size="12" font-weight="600">days</tspan></text>
-      <text x="0" y="34" class="metric-lbl">Longest</text>
-      <text x="0" y="46" class="metric-sub">{stats['longest_range']}</text>
+      <text x="0" y="36" class="metric-lbl">Longest</text>
+      <text x="0" y="50" class="metric-sub">{stats['longest_range']}</text>
     </g>
 
     <!-- Col 2: Current -->
-    <g transform="translate(132, 36)">
+    <g transform="translate(144, 38)">
       <text x="0" y="20" class="metric-val-wine">{stats['current_streak']} <tspan class="claude-sans" fill="{THEME['text_main']}" font-size="12" font-weight="600">days</tspan></text>
-      <text x="0" y="34" class="metric-lbl">Current</text>
-      <text x="0" y="46" class="metric-sub">{stats['curr_range']}</text>
+      <text x="0" y="36" class="metric-lbl">Current</text>
+      <text x="0" y="50" class="metric-sub">{stats['curr_range']}</text>
     </g>
   </g>
 
@@ -956,9 +948,9 @@ def render_hero_svg(stats, views_count):
   </defs>
 
   <!-- Outer Card -->
-  <rect x="1" y="1" width="898" height="234" rx="10" fill="url(#heroBg)" stroke="{THEME['card_border']}" stroke-width="1"/>
-  <rect x="1" y="1" width="898" height="234" rx="10" fill="url(#leftAura)"/>
-  <rect x="1" y="1" width="898" height="234" rx="10" fill="url(#bonsaiAura)"/>
+  <rect x="0" y="0" width="900" height="236" rx="10" fill="url(#heroBg)"/>
+  <rect x="0" y="0" width="900" height="236" rx="10" fill="url(#leftAura)"/>
+  <rect x="0" y="0" width="900" height="236" rx="10" fill="url(#bonsaiAura)"/>
 
   <!-- Minimal Inline Profile Views Indicator (top-right, no dedicated row) -->
   <g transform="translate(868, 32)">
