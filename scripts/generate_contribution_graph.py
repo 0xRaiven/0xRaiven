@@ -608,7 +608,43 @@ def render_svg(calendar, stats):
 </svg>"""
     return svg
 
-def _px(x, y, color, cls="", size=3):
+class _PixelCanvas:
+    """2x2 pixel-grid buffer with horizontal run-length encoding for compact crispEdges SVG."""
+
+    def __init__(self, size=2):
+        self.size = size
+        self.cells = {}
+
+    def put(self, gx, gy, color):
+        self.cells[(int(gx), int(gy))] = color
+
+    def hline(self, gx0, gx1, gy, color):
+        step = 1 if gx1 >= gx0 else -1
+        for gx in range(int(gx0), int(gx1) + step, step):
+            self.cells[(gx, int(gy))] = color
+
+    def to_svg(self):
+        if not self.cells:
+            return ""
+        rows = {}
+        for (gx, gy), col in self.cells.items():
+            rows.setdefault(gy, []).append((gx, col))
+        out = []
+        s = self.size
+        for gy in sorted(rows):
+            row = sorted(rows[gy], key=lambda item: item[0])
+            run_x, run_col = row[0]
+            run_len = 1
+            for gx, col in row[1:]:
+                if gx == run_x + run_len and col == run_col:
+                    run_len += 1
+                else:
+                    out.append(f'<rect x="{run_x * s}" y="{gy * s}" width="{run_len * s}" height="{s}" fill="{run_col}"/>')
+                    run_x, run_col, run_len = gx, col, 1
+            out.append(f'<rect x="{run_x * s}" y="{gy * s}" width="{run_len * s}" height="{s}" fill="{run_col}"/>')
+        return "\n    ".join(out)
+
+def _px(x, y, color, cls="", size=2):
     c = f' class="{cls}"' if cls else ""
     return f'<rect x="{x}" y="{y}" width="{size}" height="{size}" fill="{color}"{c}/>'
 
@@ -628,246 +664,354 @@ def _read_existing_views(hero_path):
     return 367
 
 def render_hero_svg(stats, views_count):
-    """Render 900x236 Hero Card SVG with a highly detailed 3x3 pixel-art Wine-Blossom Bonsai & minimal inline view count."""
+    """Render 900x236 Hero Card SVG with a high-detail 2x2 pixel-art Wine-Blossom Bonsai & minimal inline view count."""
     commits = stats["commits"]
     this_week = stats["this_week"]
     streak = stats["current_streak"]
+    best_day = stats["best_day"]
     repos = stats["repos"]
+    rank = stats["rank"]
 
     if commits < 100:
-        stage, stage_roman = 1, "I"
+        stage, stage_roman, next_target = 1, "I", 100
+        sub_prog = commits / 100.0
     elif commits < 400:
-        stage, stage_roman = 2, "II"
+        stage, stage_roman, next_target = 2, "II", 400
+        sub_prog = (commits - 100) / 300.0
     elif commits < 800:
-        stage, stage_roman = 3, "III"
+        stage, stage_roman, next_target = 3, "III", 800
+        sub_prog = (commits - 400) / 400.0
     elif commits < 1500:
-        stage, stage_roman = 4, "IV"
+        stage, stage_roman, next_target = 4, "IV", 1500
+        sub_prog = (commits - 800) / 700.0
     else:
-        stage, stage_roman = 5, "V"
+        stage, stage_roman, next_target = 5, "V", None
+        sub_prog = 1.0
 
-    px = []
-    # Subtle night-sky pixel stars/dust in upper bonsai space (3x3)
-    for sx, sy, sc in [
-        (486, 36, "#2A2230"), (543, 27, "#3D1624"), (615, 33, "#2A2230"),
-        (762, 30, "#3D1624"), (828, 45, "#2A2230"), (846, 84, "#3D1624"),
-        (468, 87, "#2A2230"), (807, 120, "#2A2230"), (510, 60, "#231B29"),
-    ]:
-        px.append(_px(sx, sy, sc))
+    # 2x2 pixel grid: x = gx * 2, y = gy * 2
+    # Stage canvas: gx 242..436 (x 484..872), gy 12..103 (y 24..206)
+    base = _PixelCanvas(size=2)
+    canopy = _PixelCanvas(size=2)
+    lantern_fx = []
 
-    # Ground horizon line in subtle pixel dashes (y=204)
-    for gx in range(486, 846, 6):
-        px.append(_px(gx, 204, "#1E1924"))
+    # 1. Subtle night-sky dithered stars & crescent moon (A- and above)
+    stars = [
+        (248, 17, "#2A2230"), (272, 13, "#3D1624"), (304, 15, "#2A2230"),
+        (378, 14, "#3D1624"), (258, 34, "#231B29"), (424, 42, "#2A2230"),
+        (244, 48, "#2A2230"), (402, 58, "#231B29"), (292, 26, "#231B29"),
+    ]
+    for sx, sy, sc in stars:
+        base.put(sx, sy, sc)
 
-    # Detailed stepped Tokoname ceramic bonsai pot (centered x=666, y=180..201)
-    for x in range(606, 729, 3):
-        px.append(_px(x, 180, "#7D1B3B"))  # Top rim highlight
-    for x in range(609, 726, 3):
-        px.append(_px(x, 183, "#5C1029"))
-        px.append(_px(x, 186, "#420B1D"))
-        px.append(_px(x, 189, "#330816"))
-        px.append(_px(x, 192, "#290611"))
-        px.append(_px(x, 195, "#20040D"))
-    # Recessed decorative panel on pot front
-    for x in range(624, 711, 3):
-        px.append(_px(x, 189, "#4D0E23"))
-        px.append(_px(x, 192, "#3D091A"))
-    for x in range(615, 720, 3):
-        px.append(_px(x, 198, "#170309"))
-    # Pot feet
-    for fx in (621, 624, 708, 711):
-        px.append(_px(fx, 201, "#330816"))
+    if rank in ("A-", "A", "A+", "S"):
+        # Delicate 2x2 pixel crescent moon at upper right (gx ~ 416, gy ~ 20)
+        moon_pts = [
+            (416, 15, "#4E4359"), (417, 15, "#6E5F7D"),
+            (414, 16, "#5E516B"), (415, 16, "#8E8A90"),
+            (413, 17, "#6E5F7D"), (414, 17, "#A8A2AC"),
+            (413, 18, "#6E5F7D"), (414, 18, "#8E8A90"),
+            (413, 19, "#6E5F7D"), (414, 19, "#A8A2AC"),
+            (414, 20, "#5E516B"), (415, 20, "#8E8A90"),
+            (416, 21, "#4E4359"), (417, 21, "#6E5F7D"),
+        ]
+        for mx, my, mc in moon_pts:
+            base.put(mx, my, mc)
 
-    # Mossy soil mound & tufts (y=171..177)
-    for x in range(615, 720, 3):
-        px.append(_px(x, 177, "#241C2B"))
-    for x in range(627, 708, 3):
-        px.append(_px(x, 174, "#2F2438"))
-    for mx in (621, 633, 696, 711):
-        px.append(_px(mx, 174, "#4A182D"))
-        px.append(_px(mx, 171, "#6E1E3B"))
+    # 2. Ground horizon table (gy = 102)
+    for gx in range(244, 426):
+        if gx % 3 != 0 or (295 <= gx <= 375):
+            base.put(gx, 102, "#1C1722")
+        if 302 <= gx <= 366:
+            base.put(gx, 103, "#120F17")
 
-    # Pixel Japanese Stone Lantern (Tōrō) on the right (x=765..783, y=174..201)
+    # 3. Carved Tokoname Ceramic Pot (centered gx=334, gy=89..101)
+    # Rim lip with glazed specular highlight
+    for gx in range(298, 371):
+        col = "#9C254B" if 304 <= gx <= 324 else ("#7D1B3B" if gx < 354 else "#5C1029")
+        base.put(gx, 89, col)
+    base.hline(299, 369, 90, "#420B1D")
+    # Pot body with recessed decorative panel & warm lantern reflection on right
+    for gy in range(91, 99):
+        for gx in range(301, 368):
+            if 310 <= gx <= 358 and 92 <= gy <= 97:
+                # Recessed carved panel
+                if gy == 92 or gx == 310:
+                    col = "#24050F"
+                elif gy == 97 or gx == 358:
+                    col = "#541026"
+                else:
+                    col = "#360817" if (gx + gy) % 4 else "#420B1D"
+            else:
+                col = "#5C1029" if gx >= 362 and gy <= 95 else ("#4A0D21" if gx < 312 else "#2D0713")
+            base.put(gx, gy, col)
+    base.hline(303, 365, 99, "#1A040B")
+    # Kumo-ashi (cloud-shaped pot feet)
+    for fx in (306, 307, 308, 359, 360, 361):
+        base.put(fx, 100, "#360817")
+    for fx in (307, 308, 359, 360):
+        base.put(fx, 101, "#24050F")
+
+    # 4. Mossy soil mound & creeping moss tufts (gy=85..88)
+    for gx in range(302, 367):
+        base.put(gx, 88, "#231B2A" if gx % 2 == 0 else "#1B1521")
+    for gx in range(308, 361):
+        base.put(gx, 87, "#2F2438" if (gx * 3) % 5 else "#4A182D")
+    for gx in range(316, 352):
+        base.put(gx, 86, "#392A42" if gx % 3 else "#5C1029")
+    # Tiny moss & clover tufts on soil
+    for mx in (305, 313, 349, 359, 363):
+        base.put(mx, 87, "#5C1029")
+        base.put(mx, 86, "#8B1E3F")
+        if mx in (313, 359):
+            base.put(mx + 1, 85, "#B8325A")
+
+    # 5. Stone Toro Lantern on the right (gx=384..397, gy=84..101)
     if stage >= 3:
-        for lx in range(768, 783, 3):
-            px.append(_px(lx, 201, "#2A2330"))
-        for ly in range(189, 201, 3):
-            px.append(_px(774, ly, "#3D3445"))
-        # Lantern firebox with glowing wine flame
-        px.append(_px(768, 183, "#3D3445"))
-        px.append(_px(768, 186, "#3D3445"))
-        px.append(_px(780, 183, "#3D3445"))
-        px.append(_px(780, 186, "#3D3445"))
-        px.append(_px(771, 186, "#B8325A", "lantern-glow"))
-        px.append(_px(774, 183, "#FF5C8D", "lantern-glow"))
-        px.append(_px(774, 186, "#FFA3BF", "lantern-glow"))
-        px.append(_px(777, 186, "#B8325A", "lantern-glow"))
-        # Lantern roof
-        for lx in range(765, 786, 3):
-            px.append(_px(lx, 180, "#4E4359"))
-        for lx in range(768, 783, 3):
-            px.append(_px(lx, 177, "#5E516B"))
-        px.append(_px(774, 174, "#716280"))
+        # Pedestal & pillar
+        base.hline(387, 394, 101, "#2A2330")
+        base.hline(388, 393, 100, "#3D3445")
+        for gy in range(93, 100):
+            base.put(390, gy, "#4E4359")
+            base.put(391, gy, "#342C3D")
+        base.hline(387, 394, 92, "#4E4359")
+        # Firebox housing
+        for gy in (89, 90, 91):
+            base.put(387, gy, "#3D3445")
+            base.put(394, gy, "#2D2536")
+        # Glowing wine flame (animated group)
+        lantern_fx.extend([
+            _px(388 * 2, 90 * 2, "#B8325A", "lantern-glow"),
+            _px(389 * 2, 90 * 2, "#FF5C8D", "lantern-glow"),
+            _px(390 * 2, 90 * 2, "#FFE0EA", "lantern-glow"),
+            _px(391 * 2, 90 * 2, "#FF5C8D", "lantern-glow"),
+            _px(392 * 2, 90 * 2, "#B8325A", "lantern-glow"),
+            _px(393 * 2, 90 * 2, "#8B1E3F", "lantern-glow"),
+            _px(390 * 2, 89 * 2, "#FFA3BF", "lantern-glow"),
+            _px(391 * 2, 89 * 2, "#FF5C8D", "lantern-glow"),
+        ])
+        # Curved pagoda roof & finial
+        base.hline(384, 397, 88, "#5E516B")
+        base.hline(386, 395, 87, "#4E4359")
+        base.hline(388, 393, 86, "#6D5E7D")
+        base.hline(390, 391, 85, "#8E8A90")
+        base.put(390, 84, "#A8A2AC")
 
-    # Satellite river stones & moss sprouts on the left (scaled by repos)
+    # 6. Weathered river stones & moss sprouts on the left (scaled by repos)
     sprouts = min(5, max(1, repos // 3))
-    stone_spots = [516, 540, 564, 585, 741]
+    stone_spots = [254, 268, 281, 291, 374]
     for i in range(sprouts):
         sx = stone_spots[i]
-        px.append(_px(sx, 201, "#2A2330"))
-        px.append(_px(sx + 3, 201, "#3D3445"))
-        px.append(_px(sx + 6, 201, "#241E29"))
+        base.hline(sx, sx + 4, 101, "#241E29")
+        base.hline(sx + 1, sx + 3, 100, "#3D3445")
+        base.put(sx + 1, 100, "#52465C")
         if i % 2 == 0:
-            px.append(_px(sx + 3, 198, "#5C1029"))
-            px.append(_px(sx + 3, 195, "#8B1E3F"))
+            base.put(sx + 2, 99, "#5C1029")
+            base.put(sx + 2, 98, "#8B1E3F")
+            base.put(sx + 3, 97, "#B8325A")
 
-    # Detailed 4-tone bark trunk & branches (3x3 grid)
-    b0, b1, b2, b3 = "#1F1826", "#31273D", "#473957", "#614F75"
-    trunk = []
-    if stage == 1:
-        trunk = [(663, 171, b1), (666, 171, b2), (663, 168, b2), (666, 165, b3)]
-    elif stage == 2:
-        trunk = [
-            (660, 174, b1), (663, 171, b1), (666, 171, b2),
-            (663, 168, b2), (660, 165, b2), (657, 162, b3),
-            (654, 159, b2), (651, 156, b3), (648, 153, b3),
-        ]
-    else:
-        # Flared nebari roots
-        for rx in range(645, 684, 3):
-            col = b0 if rx in (645, 681) else (b1 if rx in (648, 678) else b2)
-            trunk.append((rx, 174, col))
-        for rx in range(651, 678, 3):
-            trunk.append((rx, 171, b2 if rx < 666 else b1))
+    # 7. Bark Palette (5-tone + Jin deadwood)
+    b0, b1, b2, b3, b4 = "#19131F", "#2A2136", "#3E314F", "#56456B", "#715B8A"
+    jin_d, jin_l = "#6E6875", "#A29BA8"
 
-        # Thick gnarled S-curve trunk
-        spine = [
-            (660, 168, 15), (663, 165, 15), (666, 162, 15), (669, 159, 12),
-            (672, 156, 12), (672, 153, 12), (669, 150, 12), (666, 147, 12),
-            (663, 144, 12), (657, 141, 12), (654, 138, 12), (648, 135, 12),
-            (645, 132, 9), (642, 129, 9), (639, 126, 9), (639, 123, 9),
-            (642, 120, 9), (645, 117, 9), (648, 114, 9), (651, 111, 9),
-            (654, 108, 9), (657, 105, 6), (660, 102, 6), (663, 99, 6),
-            (663, 96, 6), (666, 93, 6),
-        ]
-        for tx, ty, w in spine:
-            for offset in range(0, w, 3):
-                if offset == 0:
-                    c = b3
-                elif offset >= w - 3:
-                    c = b0
-                elif offset == 3:
-                    c = b2
+    def draw_wood(x0, y0, x1, y1, w_start, w_end, jin=False):
+        steps = max(1, int(max(abs(x1 - x0), abs(y1 - y0)) * 2))
+        for i in range(steps + 1):
+            t = i / steps
+            cx = round(x0 + (x1 - x0) * t)
+            cy = round(y0 + (y1 - y0) * t)
+            w = max(1, round(w_start + (w_end - w_start) * t))
+            for ox in range(w):
+                if jin and ox == w - 1 and i % 2 == 0:
+                    col = jin_l if i % 4 == 0 else jin_d
+                elif ox == 0:
+                    col = b4 if (cx + cy) % 3 else b3
+                elif ox == w - 1:
+                    col = b0
+                elif ox == 1 and w >= 4:
+                    col = b3 if (cx * 3 + cy) % 5 else b2
+                elif (cx + cy * 2 + ox) % 7 == 0:
+                    col = b0  # Bark fissure grain
                 else:
-                    c = b1
-                trunk.append((tx + offset, ty, c))
+                    col = b2 if ox < w / 2 else b1
+                base.put(cx + ox, cy, col)
 
-        # Left cascading limb
-        left_limb = [
-            (636, 129, 6), (633, 129, 6), (627, 126, 6), (621, 126, 6),
-            (615, 123, 6), (609, 123, 6), (603, 120, 6), (597, 117, 6),
-            (591, 117, 3), (585, 114, 3), (579, 111, 3), (573, 108, 3),
-        ]
-        for tx, ty, w in left_limb:
-            for offset in range(0, w, 3):
-                trunk.append((tx + offset, ty, b3 if offset == 0 else b1))
+    # 8. Trunk, Nebari Roots & Branching by Stage
+    if stage == 1:
+        draw_wood(333, 86, 334, 81, 2, 1)
+    elif stage == 2:
+        draw_wood(331, 86, 334, 79, 4, 2)
+        draw_wood(334, 79, 326, 72, 2, 1)
+    else:
+        # Multi-pronged Nebari roots gripping soil
+        draw_wood(320, 87, 331, 84, 2, 3)
+        draw_wood(326, 87, 333, 83, 2, 4)
+        draw_wood(346, 87, 337, 84, 2, 3)
+        draw_wood(341, 87, 335, 83, 2, 3)
+        # Creeping moss on lower trunk base
+        base.put(329, 85, "#5C1029")
+        base.put(330, 84, "#8B1E3F")
+        base.put(339, 85, "#5C1029")
 
-        # Mid-left shoulder sub-branch
-        for tx, ty in [(642, 111), (636, 108), (630, 105), (624, 102), (618, 99)]:
-            trunk.append((tx, ty, b2))
-            trunk.append((tx + 3, ty - 3, b3))
+        # Main gnarled S-curve trunk
+        draw_wood(331, 85, 337, 76, 8, 6)
+        draw_wood(337, 76, 321, 64, 6, 5)
+        draw_wood(321, 64, 326, 52, 5, 3)
+        draw_wood(326, 52, 334, 41, 3, 2)
+
+        # Left cascading primary limb + twigs peeking into canopy
+        draw_wood(322, 65, 304, 62, 4, 3)
+        draw_wood(304, 62, 286, 55, 3, 2)
+        draw_wood(286, 55, 274, 52, 2, 1)
+        draw_wood(300, 60, 294, 54, 2, 1)  # Twig fork
+
+        # Mid-left shoulder limb
+        draw_wood(323, 55, 310, 49, 3, 2)
+        draw_wood(310, 49, 302, 44, 2, 1)
 
         if stage >= 4:
-            # Sweeping right reaching limb
-            right_limb = [
-                (675, 141, 6), (681, 138, 6), (687, 135, 6), (693, 132, 6),
-                (699, 129, 6), (705, 126, 6), (711, 123, 6), (717, 120, 6),
-                (723, 117, 3), (729, 114, 3), (735, 111, 3), (741, 108, 3),
-            ]
-            for tx, ty, w in right_limb:
-                for offset in range(0, w, 3):
-                    trunk.append((tx + offset, ty, b3 if offset == 0 else b1))
-            # Upper crown sub-branches
-            for tx, ty in [(669, 90), (675, 87), (681, 84), (657, 93), (651, 90)]:
-                trunk.append((tx, ty, b2))
+            # Sweeping right reaching limb with Jin deadwood tip
+            draw_wood(336, 72, 354, 63, 4, 3)
+            draw_wood(354, 63, 372, 55, 3, 2)
+            draw_wood(372, 55, 384, 50, 2, 1, jin=True)
+            draw_wood(358, 61, 364, 53, 2, 1)  # Upper twig into right pad
+
+            # Upper crown sub-branches (continuous sub-progress adds extra twigs)
+            draw_wood(331, 46, 344, 40, 2, 1)
+            draw_wood(326, 49, 318, 43, 2, 1)
+            if sub_prog >= 0.35:
+                draw_wood(342, 67, 348, 57, 2, 1)
+            if sub_prog >= 0.7:
+                draw_wood(290, 58, 280, 62, 2, 1)
+
         if stage >= 5:
-            for tx, ty in [(747, 105), (753, 102), (567, 105), (561, 102)]:
-                trunk.append((tx, ty, b2))
+            draw_wood(382, 51, 394, 46, 2, 1)
+            draw_wood(274, 52, 262, 48, 2, 1)
 
-    for x, y, col in trunk:
-        px.append(_px(x, y, col))
-
-    # Sculpted 6-tone dithered pixel blossom pads (3x3)
-    canopy_map = {}
-    def add_pad(cx, cy, rx, ry):
-        for py in range(cy - ry, cy + ry + 1, 3):
-            for px_x in range(cx - rx, cx + rx + 1, 3):
-                nx = (px_x - cx) / max(1, rx)
-                ny = (py - cy) / max(1, ry)
+    # 9. Sculpted 8-tone Dithered Blossom Pads + Florets + Hanging Tendrils
+    def add_lobe(cx, cy, rx, ry):
+        for gy in range(cy - ry, cy + ry + 1):
+            for gx in range(cx - rx, cx + rx + 1):
+                nx = (gx - cx) / max(1, rx)
+                ny = (gy - cy) / max(1, ry)
                 dist = nx * nx + ny * ny
-                # Dithered organic silhouette edge
-                edge_hash = ((px_x // 3) * 7 + (py // 3) * 13) % 5
-                if dist <= 0.92 or (dist <= 1.08 and edge_hash in (0, 2, 4)):
-                    if ny > 0.45:
+                bayer = ((gx & 1) << 1) | (gy & 1)
+                if dist <= 0.86 or (dist <= 1.06 and bayer in (0, 3)):
+                    if ny > 0.50:
                         col = "#2E0614"
-                    elif ny > 0.12:
+                    elif ny > 0.22:
                         col = "#4A0D21"
-                    elif ny > -0.25:
-                        col = "#751736"
-                    elif ny > -0.55:
-                        col = "#A62850"
-                    elif ny > -0.8:
-                        col = "#D9366B"
+                    elif ny > -0.08:
+                        col = "#6E1833"
+                    elif ny > -0.38:
+                        col = "#962248"
+                    elif ny > -0.64:
+                        col = "#C42E5E"
+                    elif ny > -0.84:
+                        col = "#EB4B7D"
                     else:
-                        col = "#FF5C8D"
-                    canopy_map[(px_x, py)] = col
+                        col = "#FF7AA3"
+                    canopy.put(gx, gy, col)
+
+    def add_floret(cx, cy, bright=True):
+        c_edge = "#FF85AB" if bright else "#D9366B"
+        c_core = "#FFE0EA" if bright else "#FFC2D4"
+        canopy.put(cx, cy - 1, c_edge)
+        canopy.put(cx - 1, cy, c_edge)
+        canopy.put(cx + 1, cy, c_edge)
+        canopy.put(cx, cy + 1, c_edge)
+        canopy.put(cx, cy, c_core)
 
     if stage == 1:
-        add_pad(666, 159, 12, 6)
+        add_lobe(334, 78, 6, 4)
+        add_floret(334, 77, True)
     elif stage == 2:
-        add_pad(648, 144, 24, 12)
+        add_lobe(325, 70, 12, 6)
+        add_lobe(333, 73, 9, 5)
+        add_floret(323, 68, True)
     elif stage == 3:
-        add_pad(582, 105, 36, 15)
-        add_pad(663, 84, 48, 21)
-        add_pad(618, 93, 27, 12)
+        add_lobe(286, 52, 16, 7)
+        add_lobe(308, 45, 14, 6)
+        add_lobe(332, 37, 22, 9)
+        add_floret(330, 34, True)
+        add_floret(284, 50, False)
     else:
-        add_pad(570, 105, 42, 16)   # Far-left cascading pad
-        add_pad(618, 87, 36, 15)    # Mid-left shoulder pad
-        add_pad(666, 69, 54, 22)    # Apex crown pad
-        add_pad(705, 84, 33, 14)    # Upper-right bridge pad
-        add_pad(744, 102, 45, 16)   # Far-right reaching pad
-        if stage >= 5:
-            add_pad(774, 90, 30, 13)
-            add_pad(540, 96, 27, 12)
+        # Multi-lobe sculpted Stage IV / V pads
+        # Far-left cascading pad
+        add_lobe(276, 52, 18, 7)
+        add_lobe(292, 50, 14, 6)
+        # Mid-left shoulder pad
+        add_lobe(306, 42, 16, 7)
+        # Apex crown (3 overlapping lobes)
+        add_lobe(324, 34, 18, 8)
+        add_lobe(338, 32, 20, 8)
+        add_lobe(350, 37, 14, 6)
+        # Mid-right bridge pad
+        add_lobe(354, 48, 16, 7)
+        # Far-right reaching pad
+        add_lobe(374, 52, 18, 7)
+        add_lobe(388, 50, 12, 5)
 
-    # Weekly bright blossom highlights (#FF6B98 & #FFC2D4)
-    bloom_spots = [
-        (654, 51), (666, 48), (678, 51), (642, 54), (690, 57),
-        (561, 93), (573, 90), (552, 96), (609, 75), (624, 75),
-        (735, 90), (750, 90), (762, 93), (702, 72), (663, 57),
-        (582, 96), (741, 96), (672, 54), (615, 81), (711, 78),
+        if stage >= 5 or sub_prog >= 0.45:
+            add_lobe(264, 55, 11, 5)
+        if stage >= 5 or sub_prog >= 0.75:
+            add_lobe(394, 46, 12, 5)
+
+        # Hanging blossom tendrils beneath lower pads
+        tendrils = [(270, 59), (282, 59), (302, 49), (336, 40), (370, 59), (382, 57)]
+        for tx, ty in tendrils[:3 + int(sub_prog * 3)]:
+            canopy.put(tx, ty, "#8B1E3F")
+            canopy.put(tx, ty + 1, "#D9366B")
+            canopy.put(tx, ty + 2, "#FF7AA3")
+
+        # Open sakura/wine florets scaled by weekly contributions
+        floret_pts = [
+            (334, 28, True), (322, 31, True), (346, 33, False), (276, 48, True),
+            (304, 39, True), (374, 48, True), (354, 44, False), (290, 47, False),
+            (386, 47, True), (330, 36, False),
+        ]
+        floret_count = min(len(floret_pts), max(4, this_week // 3 + 4))
+        for fx, fy, br in floret_pts[:floret_count]:
+            add_floret(fx, fy, br)
+
+    # 10. Fallen petals resting on soil, pot rim, and ground table (scaled by this_week & commits)
+    fallen = [
+        (316, 86, "#FF5C8D"), (342, 87, "#B8325A"), (355, 86, "#FFA3BF"),
+        (296, 101, "#B8325A"), (320, 102, "#FF5C8D"), (348, 101, "#D9366B"),
+        (376, 101, "#FF5C8D"), (276, 101, "#8B1E3F"), (362, 89, "#FF5C8D"),
     ]
-    bloom_count = min(len(bloom_spots), max(5, this_week // 2 + 5))
-    for i, (bx, by) in enumerate(bloom_spots[:bloom_count]):
-        canopy_map[(bx, by)] = "#FFC2D4" if i % 3 == 0 else "#FF6B98"
+    for fx, fy, fc in fallen[:min(len(fallen), max(3, this_week // 4 + 3))]:
+        base.put(fx, fy, fc)
 
-    canopy_markup = "\n      ".join(_px(x, y, col) for (x, y), col in canopy_map.items())
-    base_markup = "\n    ".join(px)
+    base_markup = base.to_svg()
+    canopy_markup = canopy.to_svg()
+    lantern_markup = "\n    ".join(lantern_fx)
 
-    # Staggered drifting 3x3 pixel petals when streak > 0
+    # 11. Animated drifting 2x2 pixel petals & bobbing fireflies
     petals_markup = ""
     if streak > 0:
         petals = [
-            (567, 117, "#FF5C8D", "p1"),
-            (615, 102, "#B8325A", "p2"),
-            (666, 90, "#FFC2D4", "p3"),
-            (735, 117, "#FF5C8D", "p4"),
-            (702, 99, "#B8325A", "p1"),
-            (591, 123, "#FF5C8D", "p3"),
-            (753, 114, "#B8325A", "p2"),
-            (642, 96, "#FF6B98", "p4"),
-            (549, 114, "#B8325A", "p1"),
+            (552, 118, "#FF5C8D", "p1"),
+            (612, 98, "#B8325A", "p2"),
+            (668, 84, "#FFE0EA", "p3"),
+            (748, 114, "#FF5C8D", "p4"),
+            (708, 102, "#B8325A", "p1"),
+            (584, 122, "#FF7AA3", "p3"),
+            (768, 110, "#B8325A", "p2"),
+            (644, 92, "#FF5C8D", "p4"),
+            (536, 116, "#B8325A", "p1"),
+            (732, 96, "#FFE0EA", "p3"),
         ]
-        petals_markup = "\n    ".join(_px(x, y, c, cls) for x, y, c, cls in petals)
+        petals_markup = "\n    ".join(_px(x, y, c, cls, size=2) for x, y, c, cls in petals)
+
+    fireflies_markup = ""
+    if streak >= 7 or best_day >= 20:
+        flies = [
+            (516, 92, "#FFE0EA", "ff1"),
+            (640, 48, "#FFA3BF", "ff2"),
+            (796, 86, "#FFE0EA", "ff1"),
+            (716, 60, "#FFA3BF", "ff2"),
+        ]
+        fireflies_markup = "\n    ".join(_px(x, y, c, cls, size=2) for x, y, c, cls in flies)
 
     formatted_views = f"{views_count:06,d}"
     lead_zeros = len(formatted_views) - len(str(views_count))
@@ -920,29 +1064,35 @@ def render_hero_svg(stats, views_count):
       }}
       @keyframes lanternFlicker {{
         0%, 100% {{ opacity: 1; }}
-        50% {{ opacity: 0.6; }}
+        50% {{ opacity: 0.55; }}
       }}
       @keyframes petalFall1 {{
         0% {{ transform: translate(0px, 0px); opacity: 0; }}
         15% {{ opacity: 0.95; }}
         85% {{ opacity: 0.75; }}
-        100% {{ transform: translate(-21px, 66px); opacity: 0; }}
+        100% {{ transform: translate(-22px, 68px); opacity: 0; }}
       }}
       @keyframes petalFall2 {{
         0% {{ transform: translate(0px, 0px); opacity: 0; }}
         15% {{ opacity: 0.9; }}
         85% {{ opacity: 0.7; }}
-        100% {{ transform: translate(15px, 72px); opacity: 0; }}
+        100% {{ transform: translate(16px, 74px); opacity: 0; }}
+      }}
+      @keyframes fireflyBob {{
+        0%, 100% {{ transform: translate(0px, 0px); opacity: 0.25; }}
+        50% {{ transform: translate(3px, -5px); opacity: 0.95; }}
       }}
       .live-dot {{ animation: liveBreath 2.4s ease-in-out infinite; }}
       .canopy-sway {{ animation: canopySway 5.2s ease-in-out infinite; }}
-      .lantern-glow {{ animation: lanternFlicker 2.8s ease-in-out infinite; }}
+      .lantern-glow {{ animation: lanternFlicker 2.6s ease-in-out infinite; }}
       .p1 {{ animation: petalFall1 4.6s ease-in-out infinite; }}
       .p2 {{ animation: petalFall2 5.4s ease-in-out 1.1s infinite; }}
       .p3 {{ animation: petalFall1 5.0s ease-in-out 2.3s infinite; }}
       .p4 {{ animation: petalFall2 5.8s ease-in-out 0.6s infinite; }}
+      .ff1 {{ animation: fireflyBob 3.6s ease-in-out infinite; }}
+      .ff2 {{ animation: fireflyBob 4.4s ease-in-out 1.4s infinite; }}
       @media (prefers-reduced-motion: reduce) {{
-        .live-dot, .canopy-sway, .lantern-glow, .p1, .p2, .p3, .p4 {{ animation: none !important; }}
+        .live-dot, .canopy-sway, .lantern-glow, .p1, .p2, .p3, .p4, .ff1, .ff2 {{ animation: none !important; }}
       }}
     </style>
   </defs>
@@ -969,13 +1119,15 @@ def render_hero_svg(stats, views_count):
   <!-- Subtle Vertical Divider -->
   <line x1="458" y1="22" x2="458" y2="214" stroke="url(#vDivider)" stroke-width="1"/>
 
-  <!-- Right Zone: Detailed 3x3 Pixel-Art Bonsai -->
+  <!-- Right Zone: High-Detail 2x2 Pixel-Art Bonsai -->
   <g shape-rendering="crispEdges">
     {base_markup}
+    {lantern_markup}
     <g{canopy_cls}>
       {canopy_markup}
     </g>
     {petals_markup}
+    {fireflies_markup}
   </g>
 
   <text x="868" y="220" text-anchor="end" class="claude-sans" font-size="10" font-weight="500" fill="{THEME['text_dim']}">Stage {stage_roman} · {commits:,} commits</text>
