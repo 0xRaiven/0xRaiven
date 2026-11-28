@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 570" width="900" height="570" fill="none" role="img" aria-label="0xraiven — 3D Isometric Contribution Graph &amp; Developer Metrics">
-  <title>0xraiven — 3D Isometric Contribution Graph &amp; Developer Metrics</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 570" width="900" height="570" fill="none" role="img" aria-label="0xRaiven — 3D Isometric Contribution Graph &amp; Developer Metrics">
+  <title>0xRaiven — 3D Isometric Contribution Graph &amp; Developer Metrics</title>
   <defs>
     <linearGradient id="cardBg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0E0D12"/>
@@ -44,7 +44,7 @@
   <g transform="translate(28, 28)">
     <text x="0" y="24" class="claude-serif" font-size="28" font-weight="700" fill="#E8E6E8">Contribution Graph</text>
     <text x="0" y="45" class="claude-sans" font-size="12" fill="#8E8A90">
-      <tspan fill="#B8325A" font-weight="600">867</tspan> contributions · Nov 2025 → Nov 2026
+      <tspan fill="#B8325A" font-weight="600">868</tspan> contributions · Nov 2025 → Nov 2026
     </text>
   </g>
 
@@ -430,12 +430,12 @@
     <text x="26" y="22" class="card-header">Contributions</text>
 
     <g transform="translate(22, 40)">
-      <text x="0" y="20" class="metric-val">867</text>
+      <text x="0" y="20" class="metric-val">868</text>
       <text x="0" y="37" class="metric-lbl">Total</text>
       <text x="0" y="52" class="metric-sub">Nov 2025 → Nov 2026</text>
     </g>
     <g transform="translate(160, 40)">
-      <text x="0" y="20" class="metric-val">28</text>
+      <text x="0" y="20" class="metric-val">29</text>
       <text x="0" y="37" class="metric-lbl">This week</text>
       <text x="0" y="52" class="metric-sub">Nov 22 → Nov 28</text>
     </g>
@@ -475,13 +475,13 @@
     <g transform="translate(20, 16)">
       <circle cx="31" cy="31" r="25" fill="none" stroke="#221D27" stroke-width="3.5"/>
       <circle cx="31" cy="31" r="25" fill="none" stroke="#B8325A" stroke-width="3.5"
-              stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="19.4"
+              stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="53.5"
               transform="rotate(-90 31 31)" filter="url(#accentGlow)"/>
-      <text x="31" y="38" text-anchor="middle" class="claude-serif" font-size="21" font-weight="700" fill="#E8E6E8">A+</text>
+      <text x="31" y="38" text-anchor="middle" class="claude-serif" font-size="21" font-weight="700" fill="#E8E6E8">A-</text>
       <g transform="translate(70, 14)">
         <text x="0" y="10" class="metric-tag">Developer Rank</text>
         <text x="0" y="24" class="metric-sub">Percentile Grade</text>
-        <text x="0" y="38" class="claude-sans" font-size="11" font-weight="600" fill="#E8E6E8">Tier: <tspan fill="#B8325A">A+</tspan></text>
+        <text x="0" y="38" class="claude-sans" font-size="11" font-weight="600" fill="#E8E6E8">Tier: <tspan fill="#B8325A">A-</tspan></text>
       </g>
     </g>
 
@@ -489,7 +489,7 @@
     <g transform="translate(230, 22)">
       <circle cx="3" cy="7" r="3" fill="#B8325A"/>
       <text x="12" y="10" class="metric-tag">Total Commits</text>
-      <text x="12" y="33" class="metric-val-sm">867</text>
+      <text x="12" y="33" class="metric-val-sm">868</text>
       <text x="12" y="47" class="metric-sub">Code activity</text>
     </g>
 
@@ -497,7 +497,7 @@
     <g transform="translate(396, 22)">
       <circle cx="3" cy="7" r="3" fill="#B8325A"/>
       <text x="12" y="10" class="metric-tag">Pull Requests</text>
-      <text x="12" y="33" class="metric-val-sm">64</text>
+      <text x="12" y="33" class="metric-val-sm">0</text>
       <text x="12" y="47" class="metric-sub">Merged &amp; authored</text>
     </g>
 
@@ -505,7 +505,7 @@
     <g transform="translate(558, 22)">
       <circle cx="3" cy="7" r="3" fill="#B8325A"/>
       <text x="12" y="10" class="metric-tag">Code Issues</text>
-      <text x="12" y="33" class="metric-val-sm">1</text>
+      <text x="12" y="33" class="metric-val-sm">0</text>
       <text x="12" y="47" class="metric-sub">Reported &amp; tracked</text>
     </g>
 
@@ -513,7 +513,7 @@
     <g transform="translate(716, 22)">
       <circle cx="3" cy="7" r="3" fill="#B8325A"/>
       <text x="12" y="10" class="metric-tag">Contributed To</text>
-      <text x="12" y="33" class="metric-val-sm">16 <tspan class="claude-sans" font-size="12" font-weight="500" fill="#8E8A90">repos</tspan></text>
+      <text x="12" y="33" class="metric-val-sm">11 <tspan class="claude-sans" font-size="12" font-weight="500" fill="#8E8A90">repos</tspan></text>
       <text x="12" y="47" class="metric-sub">Open-source impact</text>
     </g>
   </g>
