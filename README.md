@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/hero-card.svg?v=1795888049" width="100%" alt="0xraiven — Pixel Bonsai &amp; Profile Telemetry" />
+<img src="assets/hero-card.svg?v=374" width="100%" alt="0xraiven — Pixel Bonsai &amp; Profile Telemetry" />
 
 <img src="assets/contribution-3d.svg?v=1795888049" width="100%" alt="0xraiven Contribution Graph" />
 
